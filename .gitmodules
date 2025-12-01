@@ -1,0 +1,3 @@
+[submodule "noisy_nav_sandbox"]
+	path = noisy_nav_sandbox
+	url = https://github.com/itannermahncke/noisy_nav_sandbox
