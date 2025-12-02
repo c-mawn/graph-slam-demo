@@ -80,14 +80,31 @@ class poseGraph:
         """
         function to display the created graph
         """
-
         pos = nx.get_node_attributes(self.graph, "pos")
         fig, ax = plt.subplots()
 
-        nx.draw(self.graph, pos, ax=ax)
+        nx.draw_networkx_edges(self.graph, pos, ax=ax)
+
+        X = []
+        Y = []
+        U = []  # The x-component of the direction vector
+        V = []  # The y-component of the direction vector
+
+        # Iterate through every node in the graph
+        for node in self.graph.nodes():
+            # Extract position
+            X.append(node.position[0])
+            Y.append(node.position[1])
+
+            # Extract orientation and convert to vector components
+            U.append(np.cos(node.orientation))
+            V.append(np.sin(node.orientation))
+
+        ax.quiver(X, Y, U, V, pivot="mid", color="blue", scale=15, headwidth=10)
         ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
-        plt.draw()
-        plt.axis("on")
+        ax.set_aspect("equal")
+
+        # plt.grid(True)
         plt.show()
 
 
@@ -100,9 +117,9 @@ class poseGraph:
 exmaple_sensor_table = [
     [0.0, [0.0, 0.0, 0.0], [2.4, pi / 2]],
     [0.5, [0.5, 0.0, 0.0], [2.4, pi / 2]],
-    [1.5, [1.0, 0.0, pi / 2], [2.4, pi / 2]],
+    [1.5, [1.0, 0.0, pi / 4], [2.4, pi / 2]],
     [2.0, [1.0, 0.5, pi / 2], [2.4, pi / 2]],
-    [2.5, [1.0, 1.0, pi / 2], [2.4, pi / 2]],
+    [2.5, [1.0, 1.0, pi / 3], [2.4, pi / 2]],
 ]
 
 
