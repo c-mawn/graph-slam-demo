@@ -6,9 +6,19 @@
 #
 -e ./external/noisy_nav_sandbox
     # via -r requirements.in
+iniconfig==2.3.0
+    # via pytest
 numpy==2.3.5
     # via pandas
+packaging==25.0
+    # via pytest
 pandas==2.3.3
+    # via -r requirements.in
+pluggy==1.6.0
+    # via pytest
+pygments==2.19.2
+    # via pytest
+pytest==9.0.1
     # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via pandas

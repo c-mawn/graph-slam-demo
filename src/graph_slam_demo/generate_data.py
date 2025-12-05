@@ -6,13 +6,14 @@ from mobile_robot_sim.environment import Environment
 from mobile_robot_sim.robot import Robot
 from mobile_robot_sim.utils import Pose, Position, Bounds, Landmark
 import pandas as pd
+import pickle
 
 COMMANDS: list[tuple[float, float, float]] = [
     # timestamp, linear vel, angular vel
     ( 0.0,       0.0,        0.0         ),
     ( 5.0,       0.5,        0.0         ),
-    ( 30.0,      0.5,        0.3         ),
-    ( 35.0,      0.5,        0.0         ),
+    ( 10.0,      0.5,        0.3         ),
+    ( 15.0,      0.5,        0.0         ),
 ]
 
 if __name__ == "__main__":
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     robot = Robot(env)
 
     # set up timekeeping
-    total_seconds = 10
+    total_seconds = 20
     total_timesteps = total_seconds / env.DT
     terminal = False
 
@@ -86,4 +87,13 @@ if __name__ == "__main__":
 
     # log the results
     ground_truth_history.to_csv("./data/groundtruth_logs.csv")
-    sensor_data_history.to_csv("./data/sensor_logs.csv")        
+    pickle.dump(
+        ground_truth_history, 
+        open("./data/groundtruth_logs.pkl", "wb")
+    ) 
+
+    sensor_data_history.to_csv("./data/sensor_logs.csv")  
+    pickle.dump(
+        sensor_data_history, 
+        open("./data/sensor_logs.pkl", "wb")
+    )       
