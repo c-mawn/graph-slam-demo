@@ -1,3 +1,3 @@
 [submodule "external/noisy_nav_sandbox"]
 	path = external/noisy_nav_sandbox
-	url = https://github.com/joloujo/noisy_nav_sandbox
+	url = https://github.com/itannermahncke/noisy_nav_sandbox
