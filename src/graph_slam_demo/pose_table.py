@@ -20,21 +20,30 @@ class PoseTable():
 
     def generate(self) -> pd.DataFrame:
 
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None): 
-            print(self.sensor_data)
-            print(self.ground_truth_data)
+        command_poses = self.calculate_poses(
+            self.sensor_data['CMD_LinearVelocity'],
+            self.sensor_data['CMD_AngularVelocity'],
+            self.sensor_data['Time']
+        )
 
-        lin = self.ground_truth_data['Actual_LinearVelocity']
-        ang = self.ground_truth_data['Actual_AngularVelocity'].to_list()
-        dt = self.ground_truth_data['Time'].diff().to_list()
-
-        print(lin, ang, dt)
+        odom_poses = self.calculate_poses(
+            self.sensor_data['Odometry_LinearVelocity'],
+            self.sensor_data['Odometry_AngularVelocity'],
+            self.sensor_data['Time']
+        )
         
-        poses = self.calculate_poses(lin[1:], ang[1:], dt[1:])
+        ground_truth_poses = self.calculate_poses(
+            self.ground_truth_data['Actual_LinearVelocity'],
+            self.ground_truth_data['Actual_AngularVelocity'],
+            self.ground_truth_data['Time']
+        )
 
-        print(poses)
-
-        return pd.DataFrame()
+        return pd.DataFrame({
+            'Time': self.ground_truth_data['Time'],
+            'CommandPoses': command_poses,
+            'OdomPoses': odom_poses,
+            'GroundTruthPoses': ground_truth_poses,
+        })
 
 
     def calculate_poses(self, 
@@ -57,14 +66,10 @@ class PoseTable():
 
         delta_time = delta_time_series.to_list()
 
-        print(len(linear_velocity), len(angular_velocity), len(delta_time))
-
         poses = [prior]
         
         for (lin_vel, ang_vel, dt) in zip(linear_velocity[1:], angular_velocity[1:], delta_time[1:]):
             next_pose = deepcopy(poses[-1])
-
-            print(lin_vel, ang_vel, dt, next_pose)
 
             if abs(ang_vel) < NEAR_ZERO:
                 dx = lin_vel * dt * cos(next_pose.theta)

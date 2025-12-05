@@ -11,4 +11,4 @@ if __name__ == "__main__":
 
     pose_table = PoseTable(sensor_data, ground_truth_data)
 
-    pose_table.generate()
+    print(pose_table.generate())
