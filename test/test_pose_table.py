@@ -21,7 +21,7 @@ def testCalculatePose():
     dt = ground_truth_data['Time']
 
     # calculate the poses
-    poses = PoseTable.calculate_poses(PoseTable(pd.DataFrame(), pd.DataFrame()), lin, ang, dt)
+    poses = PoseTable.calculate_poses(PoseTable(), lin, ang, dt)
 
     # Get the ground truth poses directly from the ground truth data
     ground_truth_poses = ground_truth_data["RobotPose"]

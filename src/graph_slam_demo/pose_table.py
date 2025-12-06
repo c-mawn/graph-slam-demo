@@ -18,7 +18,7 @@ class PoseTable():
         sensor_data (DataFrame): the table of sensor data from running the robot
         ground_truth_data (DataFrame): the table of ground truth data from running the robot
     """
-    def __init__(self, sensor_data: pd.DataFrame, ground_truth_data: pd.DataFrame) -> None:
+    def __init__(self, sensor_data: pd.DataFrame | None = None, ground_truth_data: pd.DataFrame | None = None) -> None:
         self.sensor_data = sensor_data
         self.ground_truth_data = ground_truth_data
 
@@ -31,33 +31,38 @@ class PoseTable():
             DataFrame: The pose table, with coumns "Time", "CommandPoses", "OdomPoses", and "GroundTruthPoses".
         """
 
-        # Calculate the poses for the command data
-        command_poses = self.calculate_poses(
-            self.sensor_data['CMD_LinearVelocity'],
-            self.sensor_data['CMD_AngularVelocity'],
-            self.sensor_data['Time']
-        )
+        dataframe_dict: dict[str, list | pd.Series] = {}
 
-        # Calculate the poses for the odom data
-        odom_poses = self.calculate_poses(
-            self.sensor_data['Odometry_LinearVelocity'],
-            self.sensor_data['Odometry_AngularVelocity'],
-            self.sensor_data['Time']
-        )
-        
-        # Calculate the poses for the ground truth data
-        ground_truth_poses = self.calculate_poses(
-            self.ground_truth_data['Actual_LinearVelocity'],
-            self.ground_truth_data['Actual_AngularVelocity'],
-            self.ground_truth_data['Time']
-        )
+        if self.sensor_data is not None:
+            # Calculate the poses for the command data
+            dataframe_dict['CommandPoses'] = self.calculate_poses(
+                self.sensor_data['CMD_LinearVelocity'],
+                self.sensor_data['CMD_AngularVelocity'],
+                self.sensor_data['Time']
+            )
 
-        return pd.DataFrame({
-            'Time': self.ground_truth_data['Time'],
-            'CommandPoses': command_poses,
-            'OdomPoses': odom_poses,
-            'GroundTruthPoses': ground_truth_poses,
-        })
+            # Calculate the poses for the odom data
+            dataframe_dict['OdomPoses'] = self.calculate_poses(
+                self.sensor_data['Odometry_LinearVelocity'],
+                self.sensor_data['Odometry_AngularVelocity'],
+                self.sensor_data['Time']
+            )
+
+            # Set the Time for the dict
+            dataframe_dict['Time'] = self.sensor_data['Time']
+
+        if self.ground_truth_data is not None:
+            # Calculate the poses for the ground truth data
+            dataframe_dict['GroundTruthPoses'] = self.calculate_poses(
+                self.ground_truth_data['Actual_LinearVelocity'],
+                self.ground_truth_data['Actual_AngularVelocity'],
+                self.ground_truth_data['Time']
+            )
+
+            # Set the Time for the dict, overriding the sensor one if it's there
+            dataframe_dict['Time'] = self.ground_truth_data['Time']
+
+        return pd.DataFrame(dataframe_dict)
 
 
     def calculate_poses(self, 
