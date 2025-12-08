@@ -1,6 +1,19 @@
 from typing import TypedDict, Optional, Tuple
 import regex as re
 import numpy as np
+from math import pi
+
+SENSOR_DATA_PATH = "data/sensor_logs.pkl"
+GROUND_TRUTH_DATA_PATH = "data/groundtruth_logs.pkl"
+
+# exmaple sensor table for testing
+example_sensor_table = [
+    [0.0, [0.0, 0.0, 0.0], [np.sqrt(0.5), pi / 4], [0.0, 0.0]],
+    [0.5, [0.5, 0.0, 0.0], [None, None], [1.0, 0.0]],
+    [1.5, [1.0, 0.0, pi / 2], [np.sqrt(0.5), pi / 4], [1.0, 1.0]],
+    [2.0, [1.0, 0.5, pi / 2], [None, None], [1.0, 0.0]],
+    [2.5, [1.0, 1.0, pi / 2], [np.sqrt(0.5), 3 * pi / 4], [0.0, 0.0]],
+]
 
 
 class sensorEdge(TypedDict):

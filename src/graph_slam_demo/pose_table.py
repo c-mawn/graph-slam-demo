@@ -9,11 +9,14 @@ from mobile_robot_sim.utils import Pose, Position, NEAR_ZERO
 import pandas as pd
 import re
 from typing import Sequence
+from utils import unpack_bearing_range, pose_from_odom, poseStamped, sensorEdge
+import networkx as nx
+import numpy as np
 
 
-class PoseTable:
+class SimData:
     """
-    An object to generate robot poses from sensor and groud truth data.
+    An object to configure raw simulator data into useful structures.
 
     Attributes:
         sensor_data (DataFrame): the table of sensor data from running the robot
@@ -22,13 +25,89 @@ class PoseTable:
 
     def __init__(
         self,
-        sensor_data: pd.DataFrame | None = None,
-        ground_truth_data: pd.DataFrame | None = None,
+        sensor_data: pd.DataFrame,
+        ground_truth_data: pd.DataFrame,
     ) -> None:
         self.sensor_data = sensor_data
         self.ground_truth_data = ground_truth_data
 
-    def generate(self) -> pd.DataFrame:
+    def generate_graph(self) -> nx.Graph:
+        """
+        Generates a networkx graph where nodes are robot poses and edges are constraints.
+        """
+        graph = nx.Graph()
+        prev_node = None
+
+        table_col = self.sensor_data.columns
+        beacon_count = 0
+        for col in table_col:
+            beacon_count += (
+                1 if re.search(re.escape("LandmarkPinger_Landmark"), col) else 0
+            )
+
+        for index, row in self.sensor_data.iterrows():
+            # goes thru each row in table
+            # [0] index, [1]: time, [2:5]: beacons, [6]: gps, [7,8]: odom, [9,10], cmd vel
+            timestamp = row["Time"]
+            # getting pose estimate
+            if index == 1 or index == 0:
+                x, y, theta = (0.0, 0.0, 0.0)
+            else:
+                # TODO: non constant dt (how to generate it?)
+                updated_pose = pose_from_odom(
+                    poseStamped((x, y), theta, timestamp),
+                    0.1,
+                    row["Odometry_LinearVelocity"],
+                    row["Odometry_AngularVelocity"],
+                )
+                x, y = updated_pose.position
+                theta = updated_pose.orientation
+
+            # creates a new node
+            current_node = poseStamped((x, y), theta, timestamp)
+            graph.add_node(current_node, pos=(x, y), node_type="odom")
+
+            # connecting pose nodes
+            if prev_node is not None:
+                # Extract odom data if available
+                lin_v = row["Odometry_LinearVelocity"]
+                ang_v = row["Odometry_AngularVelocity"]
+
+                # create the edge dict
+                odom_edge = sensorEdge(
+                    time=timestamp, type="odom", b=None, r=None, lv=lin_v, av=ang_v
+                )
+
+                # connect previous node to current node
+                graph.add_edge(prev_node, current_node, **odom_edge)
+
+            # Check if beacon data exists and is valid
+
+            for i in range(beacon_count):
+                b, r = unpack_bearing_range(row[f"LandmarkPinger_Landmark{i}"])
+                if b is not None and r is not None:
+                    # calculate absolute position of beacon
+                    x_b = x + r * np.cos(theta + b)
+                    y_b = y + r * np.sin(theta + b)
+
+                    beacon_node = poseStamped((x_b, y_b), 0.0, timestamp)
+
+                    # Add beacon node
+                    graph.add_node(beacon_node, pos=(x_b, y_b), node_type="beacon")
+
+                    # Create edge between current pose and beacon
+                    beacon_edge_attr = sensorEdge(
+                        time=timestamp, type="beacon", r=r, b=b, lv=None, av=None
+                    )
+
+                    graph.add_edge(current_node, beacon_node, **beacon_edge_attr)
+
+            # Update previous node for the next iteration
+            prev_node = current_node
+
+        return graph
+
+    def generate_pose_table(self) -> pd.DataFrame:
         """
         Generate the pose table
 
