@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import re
 from math import pi
-from pose_stamped import poseStamped
-from gen_edge import sensor_edge
-from helper_functions import pose_from_odom, unpack_bearing_range
+from utils import poseStamped
+from utils import sensorEdge
+from utils import pose_from_odom, unpack_bearing_range
 
 
 class bayesNet:
@@ -51,7 +51,7 @@ class bayesNet:
             lin_v = self.sensor_table["Odometry_LinearVelocity"][i]
             ang_v = self.sensor_table["Odometry_AngularVelocity"][i]
 
-            odom_edge = sensor_edge(
+            odom_edge = sensorEdge(
                 time=0, type="odom", b=None, r=None, lv=lin_v, av=ang_v
             )
             if i != 0:
@@ -65,7 +65,7 @@ class bayesNet:
                 )
                 if b is not None and r is not None:
                     # this means that this pose saw beacon{num}
-                    beacon_edge_attr = sensor_edge(
+                    beacon_edge_attr = sensorEdge(
                         time=0, type="beacon", r=r, b=b, lv=None, av=None
                     )
                     self.graph.add_edge(odom_node, beacon, **beacon_edge_attr)

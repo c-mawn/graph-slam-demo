@@ -1,5 +1,5 @@
 """
-Class for generating a table of robot poses from different sources, including ground truth data, 
+Class for generating a table of robot poses from different sources, including ground truth data,
 motor commands, and sensor readings
 """
 
@@ -11,23 +11,27 @@ import re
 from typing import Sequence
 
 
-class PoseTable():
+class PoseTable:
     """
-    An object to generate robot poses from sensor and groud truth data. 
+    An object to generate robot poses from sensor and groud truth data.
 
     Attributes:
         sensor_data (DataFrame): the table of sensor data from running the robot
         ground_truth_data (DataFrame): the table of ground truth data from running the robot
     """
-    def __init__(self, sensor_data: pd.DataFrame | None = None, ground_truth_data: pd.DataFrame | None = None) -> None:
+
+    def __init__(
+        self,
+        sensor_data: pd.DataFrame | None = None,
+        ground_truth_data: pd.DataFrame | None = None,
+    ) -> None:
         self.sensor_data = sensor_data
         self.ground_truth_data = ground_truth_data
-
 
     def generate(self) -> pd.DataFrame:
         """
         Generate the pose table
-        
+
         Returns:
             DataFrame: The pose table, with coumns "Time", "CommandPoses", "OdomPoses", "GroundTruthPoses", and "CalcGroundTruthPoses".
         """
@@ -36,21 +40,21 @@ class PoseTable():
 
         if self.sensor_data is not None:
             # Calculate the poses for the command data
-            dataframe_dict['CommandPoses'] = self.calculate_poses(
-                self.sensor_data['CMD_LinearVelocity'],
-                self.sensor_data['CMD_AngularVelocity'],
-                self.sensor_data['Time']
+            dataframe_dict["CommandPoses"] = self.calculate_poses(
+                self.sensor_data["CMD_LinearVelocity"],
+                self.sensor_data["CMD_AngularVelocity"],
+                self.sensor_data["Time"],
             )
 
             # Calculate the poses for the odom data
-            dataframe_dict['OdomPoses'] = self.calculate_poses(
-                self.sensor_data['Odometry_LinearVelocity'],
-                self.sensor_data['Odometry_AngularVelocity'],
-                self.sensor_data['Time']
+            dataframe_dict["OdomPoses"] = self.calculate_poses(
+                self.sensor_data["Odometry_LinearVelocity"],
+                self.sensor_data["Odometry_AngularVelocity"],
+                self.sensor_data["Time"],
             )
 
             # Set the Time for the dict
-            dataframe_dict['Time'] = self.sensor_data['Time']
+            dataframe_dict["Time"] = self.sensor_data["Time"]
 
         if self.ground_truth_data is not None:
             ground_truth_poses = self.ground_truth_data["RobotPose"]
@@ -61,48 +65,48 @@ class PoseTable():
                 # Parse the poses
                 match = re.match(r"X([-.\d]*)Y([-.\d]*)T([-.\d]*)", pose)
                 if match is None:
-                    print("regex failed")  
+                    print("regex failed")
                     poses.append(Pose())
-                else:       
+                else:
                     gt_x, gt_y, gt_t = [float(group) for group in match.groups()]
                     poses.append(Pose(Position(gt_x, gt_y), gt_t))
 
-            dataframe_dict['GroundTruthPoses'] = poses
+            dataframe_dict["GroundTruthPoses"] = poses
 
             # Calculate the poses for the ground truth data
-            dataframe_dict['CalcGroundTruthPoses'] = self.calculate_poses(
-                self.ground_truth_data['Actual_LinearVelocity'],
-                self.ground_truth_data['Actual_AngularVelocity'],
-                self.ground_truth_data['Time']
+            dataframe_dict["CalcGroundTruthPoses"] = self.calculate_poses(
+                self.ground_truth_data["Actual_LinearVelocity"],
+                self.ground_truth_data["Actual_AngularVelocity"],
+                self.ground_truth_data["Time"],
             )
 
             # Set the Time for the dict, overriding the sensor one if it's there
-            dataframe_dict['Time'] = self.ground_truth_data['Time']
+            dataframe_dict["Time"] = self.ground_truth_data["Time"]
 
         return pd.DataFrame(dataframe_dict)
 
-
-    def calculate_poses(self, 
-        linear_velocity: pd.Series | Sequence[float], 
-        angular_velocity: pd.Series | Sequence[float], 
+    def calculate_poses(
+        self,
+        linear_velocity: pd.Series | Sequence[float],
+        angular_velocity: pd.Series | Sequence[float],
         time: pd.Series | Sequence[float],
         prior: Pose = Pose(),
     ) -> list[Pose]:
         """
         Calculate robot poses for a specific sequence of linear and angular velocities
-        
+
         Arguments:
-            linear_velocity (pd.Series | Sequence[float]): The linear velocity of the robot over 
+            linear_velocity (pd.Series | Sequence[float]): The linear velocity of the robot over
             time. The first value will be ignored, as the start pose is dictated by the prior
-            angular_velocity (pd.Series | Sequence[float]): The angular velocity of the robot over 
+            angular_velocity (pd.Series | Sequence[float]): The angular velocity of the robot over
             time. The first value will be ignored, as the start pose is dictated by the prior
             time (pd.Series | Sequence[float]): The time for each linear and angular velocity value
             prior (Pose): The starting pose of the robot. Defaults to `Pose(Position(0, 0), 0)`
-        
+
         Returns:
             list[Pose]: The pose of the robot for each timestep
         """
-        
+
         # Enforce that velocities should be lists
         if isinstance(linear_velocity, pd.Series):
             linear_velocity = linear_velocity.to_list()
@@ -120,10 +124,12 @@ class PoseTable():
 
         # The robot starts at the prior Pose
         poses = [prior]
-        
-        # For each time step, ignoring the first. We ignore the first because the first pose is the prior 
+
+        # For each time step, ignoring the first. We ignore the first because the first pose is the prior
         # Pose, and the first element of delta_time is null since we took the diff.
-        for (lin_vel, ang_vel, dt) in zip(linear_velocity[1:], angular_velocity[1:], delta_time[1:]):
+        for lin_vel, ang_vel, dt in zip(
+            linear_velocity[1:], angular_velocity[1:], delta_time[1:]
+        ):
             next_pose = deepcopy(poses[-1])
 
             # Calculate the change in position and angle
@@ -136,14 +142,8 @@ class PoseTable():
             else:
                 r = lin_vel / ang_vel
                 dtheta = ang_vel * dt
-                dx = r * (
-                    sin(next_pose.theta + dtheta)
-                    - sin(next_pose.theta)
-                )
-                dy = -r * (
-                    cos(next_pose.theta + dtheta)
-                    - cos(next_pose.theta)
-                )
+                dx = r * (sin(next_pose.theta + dtheta) - sin(next_pose.theta))
+                dy = -r * (cos(next_pose.theta + dtheta) - cos(next_pose.theta))
 
             # Move the robot
             next_pose.pos.x += dx

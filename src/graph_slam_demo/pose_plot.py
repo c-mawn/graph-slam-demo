@@ -15,17 +15,3 @@ if __name__ == "__main__":
 
     # Create a PoseTable object
     pose_table = PoseTable(sensor_data, ground_truth_data).generate()
-
-    for series_name in ["CommandPoses", "OdomPoses", "GroundTruthPoses", "CalcGroundTruthPoses"]:
-        poses: list[Pose] = pose_table[series_name].to_list()
-
-        x = [pose.pos.x for pose in poses]
-        y = [pose.pos.y for pose in poses]
-
-        # plt.scatter(x, y)
-        plt.plot(x, y)
-
-    plt.legend(["CommandPoses", "OdomPoses", "GroundTruthPoses", "CalcGroundTruthPoses"])
-    plt.axis('equal')
-    plt.show()
-        
