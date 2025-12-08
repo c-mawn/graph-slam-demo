@@ -5,8 +5,9 @@ motor commands, and sensor readings
 
 from copy import deepcopy
 from math import sin, cos, pi
-from mobile_robot_sim.utils import Pose, NEAR_ZERO
+from mobile_robot_sim.utils import Pose, Position, NEAR_ZERO
 import pandas as pd
+import re
 from typing import Sequence
 
 
@@ -28,7 +29,7 @@ class PoseTable():
         Generate the pose table
         
         Returns:
-            DataFrame: The pose table, with coumns "Time", "CommandPoses", "OdomPoses", and "GroundTruthPoses".
+            DataFrame: The pose table, with coumns "Time", "CommandPoses", "OdomPoses", "GroundTruthPoses", and "CalcGroundTruthPoses".
         """
 
         dataframe_dict: dict[str, list | pd.Series] = {}
@@ -52,8 +53,24 @@ class PoseTable():
             dataframe_dict['Time'] = self.sensor_data['Time']
 
         if self.ground_truth_data is not None:
+            ground_truth_poses = self.ground_truth_data["RobotPose"]
+
+            poses: list[Pose] = []
+
+            for pose in ground_truth_poses:
+                # Parse the poses
+                match = re.match(r"X([-.\d]*)Y([-.\d]*)T([-.\d]*)", pose)
+                if match is None:
+                    print("regex failed")  
+                    poses.append(Pose())
+                else:       
+                    gt_x, gt_y, gt_t = [float(group) for group in match.groups()]
+                    poses.append(Pose(Position(gt_x, gt_y), gt_t))
+
+            dataframe_dict['GroundTruthPoses'] = poses
+
             # Calculate the poses for the ground truth data
-            dataframe_dict['GroundTruthPoses'] = self.calculate_poses(
+            dataframe_dict['CalcGroundTruthPoses'] = self.calculate_poses(
                 self.ground_truth_data['Actual_LinearVelocity'],
                 self.ground_truth_data['Actual_AngularVelocity'],
                 self.ground_truth_data['Time']

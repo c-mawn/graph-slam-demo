@@ -11,10 +11,16 @@ import pickle
 COMMANDS: list[tuple[float, float, float]] = [
     # timestamp, linear vel, angular vel
     ( 0.0,       0.0,        0.0         ),
-    ( 5.0,       0.5,        0.0         ),
-    ( 10.0,      0.5,        0.3         ),
-    ( 15.0,      0.5,        0.0         ),
+    ( 1.0,       1.0,        0.0         ),
+    ( 10.0,      1.0,        0.1         ),
+    ( 20.0,      1.0,        0.0         ),
+    ( 35.0,      1.0,        0.1         ),
+    ( 75.0,      1.0,        0.0         ),
+    ( 85.0,      1.0,        0.2         ),
+    ( 95.0,      1.0,        0.0         ),
 ]
+
+TOTAL_SECONDS = 105
 
 if __name__ == "__main__":
     # set up the sim
@@ -34,8 +40,7 @@ if __name__ == "__main__":
     robot = Robot(env)
 
     # set up timekeeping
-    total_seconds = 20
-    total_timesteps = total_seconds / env.DT
+    total_timesteps = TOTAL_SECONDS / env.DT
     terminal = False
 
     # set up logging
