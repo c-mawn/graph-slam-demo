@@ -1,4 +1,5 @@
 matplotlib
+networkx
 -e ./external/noisy_nav_sandbox
 pandas
 pytest

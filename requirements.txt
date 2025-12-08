@@ -18,6 +18,8 @@ kiwisolver==1.4.9
     # via matplotlib
 matplotlib==3.10.7
     # via -r requirements.in
+networkx==3.6
+    # via -r requirements.in
 numpy==2.3.5
     # via
     #   contourpy
