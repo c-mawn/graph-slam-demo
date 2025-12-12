@@ -2,3 +2,5 @@ matplotlib
 -e ./external/noisy_nav_sandbox
 pandas
 pytest
+networkx
+regex

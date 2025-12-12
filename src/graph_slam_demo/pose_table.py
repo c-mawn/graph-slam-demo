@@ -9,7 +9,7 @@ from mobile_robot_sim.utils import Pose, Position, NEAR_ZERO
 import pandas as pd
 import re
 from typing import Sequence
-from utils import unpack_bearing_range, pose_from_odom, poseStamped, sensorEdge
+from utils import unpack_bearing_range, poseStamped, sensorEdge
 import networkx as nx
 import numpy as np
 
@@ -30,6 +30,7 @@ class SimData:
     ) -> None:
         self.sensor_data = sensor_data
         self.ground_truth_data = ground_truth_data
+        self.pose_table = self.generate_pose_table()
 
     def generate_graph(self) -> nx.Graph:
         """
@@ -45,23 +46,17 @@ class SimData:
                 1 if re.search(re.escape("LandmarkPinger_Landmark"), col) else 0
             )
 
-        for index, row in self.sensor_data.iterrows():
+        for index, row in self.pose_table.iterrows():
             # goes thru each row in table
-            # [0] index, [1]: time, [2:5]: beacons, [6]: gps, [7,8]: odom, [9,10], cmd vel
             timestamp = row["Time"]
             # getting pose estimate
             if index == 1 or index == 0:
                 x, y, theta = (0.0, 0.0, 0.0)
             else:
-                # TODO: non constant dt (how to generate it?)
-                updated_pose = pose_from_odom(
-                    poseStamped((x, y), theta, timestamp),
-                    0.1,
-                    row["Odometry_LinearVelocity"],
-                    row["Odometry_AngularVelocity"],
-                )
-                x, y = updated_pose.position
-                theta = updated_pose.orientation
+                updated_pose = row["OdomPoses"]
+                x = updated_pose.pos.x
+                y = updated_pose.pos.y
+                theta = updated_pose.theta
 
             # creates a new node
             current_node = poseStamped((x, y), theta, timestamp)
@@ -70,8 +65,8 @@ class SimData:
             # connecting pose nodes
             if prev_node is not None:
                 # Extract odom data if available
-                lin_v = row["Odometry_LinearVelocity"]
-                ang_v = row["Odometry_AngularVelocity"]
+                lin_v = self.sensor_data["Odometry_LinearVelocity"][index]
+                ang_v = self.sensor_data["Odometry_AngularVelocity"][index]
 
                 # create the edge dict
                 odom_edge = sensorEdge(
@@ -84,7 +79,9 @@ class SimData:
             # Check if beacon data exists and is valid
 
             for i in range(beacon_count):
-                b, r = unpack_bearing_range(row[f"LandmarkPinger_Landmark{i}"])
+                b, r = unpack_bearing_range(
+                    self.sensor_data[f"LandmarkPinger_Landmark{i}"][index]
+                )
                 if b is not None and r is not None:
                     # calculate absolute position of beacon
                     x_b = x + r * np.cos(theta + b)

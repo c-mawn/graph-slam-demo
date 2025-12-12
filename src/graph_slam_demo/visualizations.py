@@ -1,11 +1,12 @@
-from pose_table import PoseTable
-from mobile_robot_sim.utils import Pose
+from mobile_robot_sim.utils import Pose, Position, Bounds, Landmark
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pandas as pd
+from pose_table import SimData
 
 
-def trajectory_comparison(pose_table: PoseTable):
+def trajectory_comparison(pose_table: SimData):
     for series_name in [
         "CommandPoses",
         "OdomPoses",
@@ -27,7 +28,7 @@ def trajectory_comparison(pose_table: PoseTable):
     plt.show()
 
 
-def display_graph(self, graph: nx.Graph):
+def display_graph(graph: nx.Graph, pose_table: pd.DataFrame | None):
     """
     Function to display the created graph
     """
@@ -37,7 +38,7 @@ def display_graph(self, graph: nx.Graph):
     fig, ax = plt.subplots(figsize=(8, 8))
 
     # Using a list of colors to differentiate odom vs beacon edges
-    edges = self.graph.edges(data=True)
+    edges = graph.edges(data=True)
     odom_edges = [(u, v) for u, v, d in edges if d.get("type") == "odom"]
     beacon_edges = [(u, v) for u, v, d in edges if d.get("type") == "beacon"]
 
@@ -53,7 +54,7 @@ def display_graph(self, graph: nx.Graph):
         graph,
         pos_layout,
         edgelist=beacon_edges,
-        edge_color="red",
+        edge_color="pink",
         style="dashed",
         ax=ax,
         label="Beacon",
@@ -78,7 +79,7 @@ def display_graph(self, graph: nx.Graph):
         pos_layout,
         nodelist=beacon_nodes,
         node_size=5,
-        node_color="green",
+        node_color="orange",
         node_shape="s",
         ax=ax,
         label="Landmark",
@@ -94,6 +95,25 @@ def display_graph(self, graph: nx.Graph):
 
     # draw robot poses as arrows
     ax.quiver(X, Y, U, V, pivot="mid", color="blue", scale=50, headwidth=4)
+
+    landmarks = [
+        Landmark(Position(5, 5), 0),
+        Landmark(Position(20, 5), 1),
+        Landmark(Position(10, 15), 2),
+        Landmark(Position(25, 20), 3),
+        Landmark(Position(15, 25), 4),
+    ]
+
+    # plot landmarks as point in diff color
+    landmark_x = [i.pos.x for i in landmarks]
+    landmark_y = [i.pos.y for i in landmarks]
+    ax.scatter(landmark_x, landmark_y, c="red", label="True Landmark", zorder=5, s=70)
+    if pose_table is not None:
+        # plot line of ground truth odoms from the pose table
+        gt = pose_table["GroundTruthPoses"].tolist()
+        gt_x = [i.pos.x for i in gt]
+        gt_y = [i.pos.y for i in gt]
+        ax.plot(gt_x, gt_y, c="green", label="True Poses", zorder=2)
 
     ax.set_aspect("equal")
     plt.legend()
